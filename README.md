@@ -18,14 +18,22 @@ It is designed to stay out of the system's way:
 - A monitor that supports DDC/CI over DisplayPort, HDMI, USB-C or Thunderbolt
 - Swift toolchain (Xcode or the Command Line Tools)
 
-## Build and install
+## Install from a release
+
+1. Download `Nits-<version>.dmg` from the repository's Releases page and open it.
+2. Drag **Nits** onto the **Applications** shortcut.
+3. Open Nits from Applications. The app is not notarised by Apple, so the first launch is blocked:
+   go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway**.
+   This is needed once per downloaded copy.
+
+## Build from source
 
 ```bash
 ./Scripts/build.sh --install
 ```
 
 This builds `build/Nits.app`, copies it to `/Applications` and launches it. Without `--install`
-it only builds.
+it only builds. `./Scripts/package.sh` builds the release disk image, `build/Nits-<version>.dmg`.
 
 To use the brightness and volume keys, choose **Enable Brightness & Volume Keys…** in the menu and
 approve Nits under Accessibility in System Settings. The app is ad-hoc signed, so macOS asks for
