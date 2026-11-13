@@ -1,15 +1,56 @@
 import AppKit
 import ServiceManagement
 
+/// Shared metrics so headers, sliders and percentages line up on the same edges.
+private enum MenuLayout {
+    /// Space between the menu's edge and its content, the same on both sides.
+    static let inset: CGFloat = 14
+    static let minimumWidth: CGFloat = 300
+    static let percentWidth: CGFloat = 36
+    static let percentGap: CGFloat = 8
+    /// Text fields pad their text by this much; offsetting by it puts the glyphs on the inset line.
+    static let textPadding: CGFloat = 2
+}
+
+/// The name of a display above its sliders, aligned with the sliders' left edge.
+final class HeaderRow: NSView {
+    init(title: String) {
+        super.init(frame: NSRect(x: 0, y: 0, width: MenuLayout.minimumWidth, height: 24))
+        autoresizingMask = [.width]
+        let label = NSTextField(labelWithString: title)
+        label.font = .systemFont(ofSize: 11, weight: .semibold)
+        label.textColor = .secondaryLabelColor
+        label.lineBreakMode = .byTruncatingTail
+        label.frame = NSRect(
+            x: MenuLayout.inset - MenuLayout.textPadding, y: 3,
+            width: bounds.width - (MenuLayout.inset - MenuLayout.textPadding) * 2, height: 14)
+        label.autoresizingMask = [.width]
+        addSubview(label)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.staticText)
+        setAccessibilityLabel(title)
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) { fatalError("not used") }
+}
+
 /// A slider row inside the menu: a Control Center style slider and the level as a percentage.
+/// The row stretches to the menu's width; the slider takes all the space the percentage leaves.
 final class SliderRow: NSView {
     private let slider: LevelSlider
     private let label = NSTextField(labelWithString: "")
 
     init(symbol: String, title: String, value: Float?, onChange: @escaping (Float) -> Void) {
+        let width = MenuLayout.minimumWidth
+        let sliderWidth = width - MenuLayout.inset * 2 - MenuLayout.percentGap - MenuLayout.percentWidth
         slider = LevelSlider(
-            frame: NSRect(x: 14, y: 6, width: 214, height: 22), symbol: symbol, title: title, value: value ?? 0.5)
-        super.init(frame: NSRect(x: 0, y: 0, width: 280, height: 34))
+            frame: NSRect(x: MenuLayout.inset, y: 5, width: sliderWidth, height: 22),
+            symbol: symbol, title: title, value: value ?? 0.5)
+        super.init(frame: NSRect(x: 0, y: 0, width: width, height: 32))
+        autoresizingMask = [.width]
+
+        slider.autoresizingMask = [.width]
         slider.toolTip = title
         slider.onChange = { [weak self] value in
             self?.show(value)
@@ -17,10 +58,16 @@ final class SliderRow: NSView {
         }
         addSubview(slider)
 
-        label.frame = NSRect(x: 230, y: 9, width: 38, height: 16)
-        label.alignment = .right
         label.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
         label.textColor = .secondaryLabelColor
+        label.alignment = .right
+        // Centred on the slider's middle line.
+        let textHeight = ceil(label.font!.ascender - label.font!.descender)
+        label.frame = NSRect(
+            x: width - MenuLayout.inset - MenuLayout.percentWidth + MenuLayout.textPadding,
+            y: slider.frame.midY - textHeight / 2,
+            width: MenuLayout.percentWidth, height: textHeight)
+        label.autoresizingMask = [.minXMargin]
         addSubview(label)
         show(value)
     }
@@ -60,6 +107,7 @@ final class MenuController: NSObject, NSMenuDelegate {
         image?.isTemplate = true
         statusItem.button?.image = image
         statusItem.button?.toolTip = "Nits – display brightness and volume"
+        menu.minimumWidth = MenuLayout.minimumWidth
         menu.delegate = self
         statusItem.menu = menu
     }
@@ -84,7 +132,9 @@ final class MenuController: NSObject, NSMenuDelegate {
             menu.addItem(disabled("No displays found"))
         }
         for display in manager.displays {
-            menu.addItem(.sectionHeader(title: display.name))
+            let header = NSMenuItem()
+            header.view = HeaderRow(title: display.name)
+            menu.addItem(header)
             guard display.isControllable else {
                 menu.addItem(disabled("No hardware control (DDC) on this connection"))
                 continue

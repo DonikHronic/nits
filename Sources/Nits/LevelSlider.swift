@@ -23,6 +23,11 @@ final class LevelSlider: NSView {
     @available(*, unavailable)
     required init?(coder _: NSCoder) { fatalError("not used") }
 
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        needsDisplay = true
+    }
+
     // MARK: Geometry
 
     private var knobDiameter: CGFloat { bounds.height }
@@ -45,7 +50,7 @@ final class LevelSlider: NSView {
         let dark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         let radius = bounds.height / 2
         let track = NSBezierPath(roundedRect: bounds, xRadius: radius, yRadius: radius)
-        (dark ? NSColor.white.withAlphaComponent(0.16) : NSColor.black.withAlphaComponent(0.09)).setFill()
+        (dark ? NSColor.white.withAlphaComponent(0.16) : NSColor.black.withAlphaComponent(0.12)).setFill()
         track.fill()
 
         // The fill always reaches the far edge of the knob, so the icon sits on it at every level.
@@ -56,7 +61,7 @@ final class LevelSlider: NSView {
 
         if !dark {
             // White on a light menu needs an outline to stay visible.
-            NSColor.black.withAlphaComponent(0.10).setStroke()
+            NSColor.black.withAlphaComponent(0.16).setStroke()
             let outline = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.25, dy: 0.25), xRadius: radius, yRadius: radius)
             outline.lineWidth = 0.5
             outline.stroke()
